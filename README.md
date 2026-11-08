@@ -2,7 +2,7 @@
 
 Build versus buy is usually argued on instinct. build.buy puts both options on the same footing: upfront cost, recurring cost that can grow, benefits that can start late, discounted to net present value, with payback year and the point where the cost curves cross. Standard library only.
 
-If you are weighing this decision for real, the commercial question is rarely the arithmetic. It is which assumptions the answer depends on. I run that conversation with leadership teams through an [architecture review](https://calendly.com/andmaverick/30min?utm_source=github&utm_medium=repo&utm_campaign=build.buy).
+If you are weighing this decision for real, the commercial question is rarely the arithmetic. It is which assumptions the answer depends on. I run that conversation with leadership teams through an [architecture review](https://calendly.com/andmaverick?utm_source=github&utm_medium=repo&utm_campaign=build.buy).
 
 ## Use
 
