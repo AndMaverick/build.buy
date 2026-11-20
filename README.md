@@ -1,8 +1,8 @@
 # build.buy
 
-Build versus buy is usually argued on instinct. build.buy puts every option on the same footing, month by month: one-time cost, build team, run cost that can grow, usage pricing with volume tiers and falling prices, benefits that start late and ramp, the chance a build fails and you buy anyway, and what it is worth or costs to leave. It discounts to net present value, finds the assumption that would flip the answer, and reports how likely each option is to be the right call and what being wrong would cost. Standard library only, Python 3.10 to 3.13.
+Build versus buy is usually argued on instinct. build.buy puts every option on the same footing, month by month: a one time cost, a build team, run cost that can grow, usage pricing with volume tiers and falling prices, benefits that start late and ramp, the chance a build fails and you buy anyway, and what it is worth or costs to leave. It discounts to net present value, finds the assumption that would flip the answer, and reports how likely each option is to be the right call and what being wrong would cost. Standard library only, Python 3.10 to 3.13.
 
-If you are weighing this decision for real, the commercial question is rarely the arithmetic. It is which assumptions the answer depends on. I run that conversation with leadership teams through an [architecture review](https://calendly.com/andmaverick?utm_source=github&utm_medium=repo&utm_campaign=build.buy).
+If you are weighing this decision for real, the commercial question is rarely the arithmetic. It is which assumptions the answer depends on. [roi.lens](https://github.com/AndMaverick/roi.lens) takes the same question to a portfolio and shows how wide the answer really is.
 
 ## What it does
 
@@ -82,13 +82,13 @@ An abridged excerpt; the full file is `examples/ai_assistant.json`. Other comman
 
 ## The pieces
 
-- **Monthly timeline.** Month 0 is signing or kickoff. One-time costs land there or spread over a build period; a build team costs money until go-live; run costs, usage, benefit and ramp start at go-live.
+- **Monthly timeline.** Month 0 is signing or kickoff. One time costs land there or spread over a build period; a build team costs money until the system goes live; run costs, usage, benefit and ramp start then.
 - **Usage pricing.** A flat unit cost or graduated tiers (each band prices only the units inside it, so cost is continuous and never jumps at a threshold), a minimum commit, and prices that fall or rise by a yearly rate.
-- **Growth.** Volume grows at a yearly rate up to a cap; run costs can escalate (licence uplifts, lock-in).
+- **Growth.** Volume grows at a yearly rate up to a cap; run costs can escalate (licence uplifts, being locked in).
 - **Failure and fallback.** An option can fail with a probability after a given month. Money spent stays spent, then the fallback option starts from that month on its own timeline. This is what makes "build, and buy if it fails" a number rather than a hope.
 - **Exit and residual value.** One number at the horizon, positive (what you keep) or negative (what it costs to leave).
 - **Uncertainty.** Triangular, uniform, normal (truncated if you like), lognormal and `ci90` ("I am 90 percent sure it is between A and B") inputs, sampled by Latin hypercube. Formulas are parsed with `ast` and restricted to arithmetic, comparisons and a short function list; they never reach `eval`.
-- **What the answer depends on.** The break-even value of any variable (the volume above which build wins, the price below which the API wins) with the probability that the variable lands on each side, a deterministic tornado, and the month the cumulative cost curves cross.
+- **What the answer depends on.** The value at which any variable makes the answer break even (the volume above which build wins, the price below which the API wins) with the probability that the variable lands on each side, a deterministic tornado, and the month the cumulative cost curves cross.
 - **Regret and the value of information.** Per option: how often it is the best choice, its expected regret and 90th percentile regret (what is left on the table compared with the best choice in the same trial). EVPI is the most any study could be worth; EVPPI says what learning one input exactly is worth, so "should we get a quote or run a pilot first" has a number.
 - **Reproducible.** Every report ends with a fingerprint: the SHA-256 of the scenario, trial count, seed, sampling method and library version. The same fingerprint gives the same numbers on any machine.
 
@@ -101,25 +101,25 @@ An abridged excerpt; the full file is `examples/ai_assistant.json`. Other comman
 | Formula evaluator vs Python's own `eval` | 4,989 of 4,989 random formulas identical |
 | Graduated usage pricing vs an independent formula | 3,000 of 3,000 agree to 1e-8 |
 | NPV vs discounting the monthly net flow | 2,493 random options, largest relative gap 3.2e-14 |
-| Cost-curve crossover vs closed form `upfront / (b - a)` | month 3.333333, 8.333333 and 6.000000, all exact |
-| Break-even volume vs closed form | 50.000000 against 50.000000, and P(build wins) 0.600 as the uniform distribution says |
+| Crossover of the cost curves against closed form `upfront / (b - a)` | month 3.333333, 8.333333 and 6.000000, all exact |
+| Volume at which the options break even, against the closed form | 50.000000 against 50.000000, and P(build wins) 0.600 as the uniform distribution says |
 | EVPI of one normal uncertainty | 0.5727 against closed form 0.5727 |
 | EVPPI of each input | 0.5796 against 0.5727, and 0.9696 against 0.9634 |
 | EVPI equals the leader's expected regret | 20 of 20 random decisions |
 | Expected NPV with a 30% failure risk | -460.8 against -461.0, the exact mixture of the two outcomes |
 | Full analysis (15 variables, 3 options, 3,000 trials) | about 3 seconds, identical on every repeat |
 
-The test suite has 95 tests. Besides the checks above it includes an independent month-by-month ledger written from the definitions (it agrees with the engine on 500 random models, including the failure paths), the level and growing annuity closed forms, scale invariance (multiply every money amount by k and NPV scales by exactly k), monotonicity (a dearer input never raises NPV, a later start never raises NPV), results that are identical across `PYTHONHASHSEED` values and across the order keys are written in, and every unknown key in a scenario file is an error.
+The test suite has 95 tests. Besides the checks above it includes an independent ledger kept month by month written from the definitions (it agrees with the engine on 500 random models, including the failure paths), the level and growing annuity closed forms, scale invariance (multiply every money amount by k and NPV scales by exactly k), monotonicity (a dearer input never raises NPV, a later start never raises NPV), results that are identical across `PYTHONHASHSEED` values and across the order keys are written in, and every unknown key in a scenario file is an error.
 
 ## Honest limits
 
 - Variables are sampled independently. If volume and price move together in your world, that is not captured and the extremes will look slightly less extreme than they are.
-- Benefit is `quality x units x value per unit`, the same per-unit value for every option. If options deliver genuinely different capabilities, model that through `quality` or a separate benefit variable.
+- Benefit is `quality x units x value per unit`, the same value per unit for every option. If options deliver genuinely different capabilities, model that through `quality` or a separate benefit variable.
 - A failed option is abandoned at one month, and its fallback starts fresh at that month, with no credit for what the failed attempt learned. Partial salvage is not modelled.
 - Prices change smoothly by a yearly rate. Step changes at a renewal date, or cliff pricing where crossing a threshold reprices every unit, are not modelled (tiers are graduated).
-- Volume is drawn once per trial and then follows its growth path. There is no month-to-month noise or seasonality.
+- Volume is drawn once per trial and then follows its growth path. There is no noise from one month to the next or seasonality.
 - EVPPI is estimated by binning and is biased slightly upward with few trials; EVPI is an upper bound on any study.
-- The horizon is yours to set and there is one terminal number. A build that pays off in year six looks worse on a four-year horizon, by design.
+- The horizon is yours to set and there is one terminal number. A build that pays off in year six looks worse on a four year horizon, by design.
 - No tax, and inflation is whatever the discount rate and price drift say it is.
 - The quality of the answer is the quality of the ranges. The ranges in the examples are illustrative.
 
@@ -150,6 +150,6 @@ MIT licensed. Built by [AndMaverick LLC](https://www.andmaverick.com).
 
 ---
 
-**Related reading:** [The Meter Is Running. Nobody Built the Architecture to Stop It.](https://blog.andmaverick.com/the-meter-is-running-nobody-built-the-architecture-to-stop-it?utm_source=github&utm_medium=repo&utm_campaign=build.buy)
+**Related repositories:** [roi.lens](https://github.com/AndMaverick/roi.lens) puts ranges and risks around any business case. [token.econ](https://github.com/AndMaverick/token.econ) models what usage pricing does to margin as volume grows.
 
 **If this is your problem.** If your AI spend is outrunning your results, that is an architecture problem, and it is solvable. I am happy to look at it with you. [Begin a conversation](https://calendly.com/andmaverick?utm_source=github&utm_medium=repo&utm_campaign=build.buy).
