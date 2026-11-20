@@ -4,12 +4,30 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "build.buy"
-version = "0.1.0"
-description = "Compare build and buy options for an AI capability: NPV, payback, growing run costs, delayed benefits, and the year the cost curves cross. Dependency-free Python."
+version = "0.2.0"
+description = "Build-versus-buy decisions for AI capabilities: monthly cash flows, tiered usage pricing, team and infrastructure cost, delay, failure with fallback, break-even assumptions, crossover, regret under uncertainty, and CI gates. Seeded and dependency-free Python."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "AndMaverick LLC" }]
 
+[project.scripts]
+build-buy = "build_buy.cli:main"
+
+[tool.setuptools.package-data]
+build_buy = ["py.typed"]
+
 [tool.setuptools.packages.find]
 include = ["build_buy*"]
+
+[tool.ruff]
+line-length = 130
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+strict = true
+files = ["build_buy"]
