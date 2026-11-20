@@ -1,78 +1,51 @@
-"""build.buy: compare build and buy options for an AI capability over several years."""
-
+"""build.buy: build-versus-buy decisions for AI capabilities, with honest uncertainty and reproducible results."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from typing import Any, overload
 
-__version__ = "0.1.0"
-
-
-@dataclass(frozen=True)
-class Option:
-    name: str
-    upfront: float          # one-time cost in year 0
-    annual: float           # recurring cost per year
-    annual_growth: float = 0.0   # yearly growth of the recurring cost, as a fraction
-    annual_benefit: float = 0.0
-    delay_years: int = 0    # years before benefits start
-
-    def costs(self, years: int) -> list:
-        return [self.annual * (1 + self.annual_growth) ** y for y in range(years)]
-
-    def benefits(self, years: int) -> list:
-        return [self.annual_benefit if y >= self.delay_years else 0.0 for y in range(years)]
+from ._version import __version__
+from .compare import BreakEven, base_values, breakeven, crossover, tornado
+from .compare import compare as compare_model
+from .distributions import Fixed, Lognormal, Normal, Triangular, Uniform, from_ci90, from_dict
+from .engine import Flows, Outcome, build_flows, failed_flows, tiered_cost
+from .engine import evaluate as evaluate_model
+from .expr import Expr, ExprError, compile_expr
+from .model import Alternative, Model, Tier
+from .report import analyze, render_markdown, render_text
+from .scenario import Scenario, load, parse
+from .simple import Option, crossover_year, net_flows, npv, payback
+from .simple import compare as compare_yearly
+from .simple import evaluate as evaluate_yearly
+from .simulate import Run, evpi, evppi, prob_beats, simulate, summarize, value_of_information
 
 
-def npv(cash_flows: list, rate: float) -> float:
-    """Net present value where cash_flows[0] happens now."""
-    return sum(cf / (1 + rate) ** t for t, cf in enumerate(cash_flows))
+@overload
+def compare(subject: Sequence[Option], years: int = 5, rate: float = 0.1) -> list[dict[str, Any]]: ...
+@overload
+def compare(subject: Model, values: Mapping[str, float] | None = None) -> list[Outcome]: ...
+def compare(subject: Sequence[Option] | Model, *args: Any, **kwargs: Any) -> list[dict[str, Any]] | list[Outcome]:
+    """One name for both generations. A list of ``Option`` runs the original yearly comparison (unchanged); a ``Model`` runs the full one."""
+    if isinstance(subject, Model):
+        return compare_model(subject, *args, **kwargs)
+    return compare_yearly(list(subject), *args, **kwargs)
 
 
-def net_flows(option: Option, years: int) -> list:
-    """Yearly net cash flow. Year 0 carries the upfront cost; years run 0 to years-1."""
-    flows = [b - c for b, c in zip(option.benefits(years), option.costs(years))]
-    flows[0] -= option.upfront
-    return flows
+@overload
+def evaluate(subject: Option, years: int, rate: float) -> dict[str, Any]: ...
+@overload
+def evaluate(subject: Model, name: str, v: Mapping[str, float], *, failed: bool = False) -> Outcome: ...
+def evaluate(subject: Option | Model, *args: Any, **kwargs: Any) -> dict[str, Any] | Outcome:
+    """One name for both generations: an ``Option`` is evaluated yearly (unchanged), a ``Model`` option monthly."""
+    if isinstance(subject, Model):
+        return evaluate_model(subject, *args, **kwargs)
+    return evaluate_yearly(subject, *args, **kwargs)
 
 
-def evaluate(option: Option, years: int, rate: float) -> dict:
-    flows = net_flows(option, years)
-    total_cost = option.upfront + sum(option.costs(years))
-    return {"name": option.name, "npv": round(npv(flows, rate), 2),
-            "total_cost": round(total_cost, 2), "payback_year": payback(flows)}
-
-
-def payback(flows: list):
-    """First year index where cumulative net cash flow turns non-negative, or None."""
-    running = 0.0
-    for year, flow in enumerate(flows):
-        running += flow
-        if running >= 0:
-            return year
-    return None
-
-
-def compare(options: list, years: int = 5, rate: float = 0.1) -> list:
-    """Options ranked by net present value, best first."""
-    if years < 1:
-        raise ValueError("years must be at least 1")
-    return sorted((evaluate(o, years, rate) for o in options), key=lambda r: (-r["npv"], r["name"]))
-
-
-def crossover_year(a: Option, b: Option, horizon: int = 15):
-    """First year when the cumulative-cost ordering of a and b flips, or None within the horizon.
-
-    Year 0 sets the starting order (including each option's first recurring cost). A flip means
-    the option that started cheaper has become the more expensive one.
-    """
-    cum_a, cum_b = a.upfront, b.upfront
-    start = None
-    for year in range(horizon):
-        cum_a += a.annual * (1 + a.annual_growth) ** year
-        cum_b += b.annual * (1 + b.annual_growth) ** year
-        order = (cum_a > cum_b) - (cum_a < cum_b)
-        if start is None:
-            start = order
-        elif order != start and order != 0:
-            return year
-    return None
+__all__ = [
+    "Alternative", "BreakEven", "Expr", "ExprError", "Fixed", "Flows", "Lognormal", "Model", "Normal", "Option", "Outcome", "Run",
+    "Scenario", "Tier", "Triangular", "Uniform", "__version__", "analyze", "base_values", "breakeven", "build_flows", "compare",
+    "compare_yearly", "compile_expr", "crossover", "crossover_year", "evaluate", "evpi", "evppi", "failed_flows", "from_ci90", "from_dict",
+    "load", "net_flows", "npv", "parse", "payback", "prob_beats", "render_markdown", "render_text", "simulate", "summarize", "tiered_cost",
+    "tornado", "value_of_information",
+]

@@ -1,0 +1,179 @@
+{
+  "name": "Same decision, with a board mandate to build",
+  "description": "The assistant decision with a gate that says the numbers must support building. They do not, so the gate fails and the CLI exits 1, which is what a CI step or a review checklist should see.",
+  "horizon_months": 48,
+  "discount_rate": 0.1,
+  "variables": {
+    "monthly_requests_k": {
+      "dist": "ci90",
+      "low": 6000,
+      "high": 60000,
+      "kind": "lognormal"
+    },
+    "volume_growth": {
+      "dist": "ci90",
+      "low": 0.2,
+      "high": 0.9
+    },
+    "value_per_k": {
+      "dist": "ci90",
+      "low": 5,
+      "high": 12,
+      "kind": "lognormal"
+    },
+    "api_price": {
+      "dist": "ci90",
+      "low": 2.0,
+      "high": 5.0,
+      "kind": "lognormal"
+    },
+    "api_price_drift": {
+      "dist": "uniform",
+      "low": -0.3,
+      "high": 0.0
+    },
+    "platform_fee": {
+      "dist": "uniform",
+      "low": 9000,
+      "high": 16000
+    },
+    "platform_uplift": {
+      "dist": "triangular",
+      "low": 0.03,
+      "mode": 0.08,
+      "high": 0.15
+    },
+    "build_months": {
+      "dist": "triangular",
+      "low": 5,
+      "mode": 7,
+      "high": 12
+    },
+    "build_capex": {
+      "dist": "ci90",
+      "low": 120000,
+      "high": 350000,
+      "kind": "lognormal"
+    },
+    "team_month": {
+      "dist": "triangular",
+      "low": 45000,
+      "mode": 60000,
+      "high": 85000
+    },
+    "ops_month": {
+      "dist": "triangular",
+      "low": 18000,
+      "mode": 24000,
+      "high": 35000
+    },
+    "gpu_per_k": {
+      "dist": "ci90",
+      "low": 0.3,
+      "high": 1.0,
+      "kind": "lognormal"
+    },
+    "gpu_drift": {
+      "dist": "uniform",
+      "low": -0.25,
+      "high": -0.05
+    },
+    "refresh_cost": {
+      "dist": "triangular",
+      "low": 40000,
+      "mode": 70000,
+      "high": 120000
+    },
+    "build_quality": {
+      "dist": "uniform",
+      "low": 1.0,
+      "high": 1.03
+    }
+  },
+  "volume": {
+    "start": "monthly_requests_k",
+    "growth_per_year": "volume_growth",
+    "cap": 200000
+  },
+  "benefit": {
+    "per_unit": "value_per_k"
+  },
+  "options": {
+    "api": {
+      "live_month": 2,
+      "ramp_months": 3,
+      "one_time": {
+        "integration": 25000
+      },
+      "build_monthly": {
+        "integration_team": 12000
+      },
+      "run_monthly": {
+        "monitoring": 3000
+      },
+      "tiers": [
+        {
+          "up_to": 20000,
+          "price": "api_price"
+        },
+        {
+          "up_to": 80000,
+          "price": "api_price * 0.8"
+        },
+        {
+          "up_to": null,
+          "price": "api_price * 0.6"
+        }
+      ],
+      "price_change_per_year": "api_price_drift"
+    },
+    "platform": {
+      "live_month": 3,
+      "ramp_months": 3,
+      "one_time": {
+        "implementation": 60000
+      },
+      "build_monthly": {
+        "implementation_team": 15000
+      },
+      "run_monthly": {
+        "licence": "platform_fee",
+        "admin": 4000
+      },
+      "run_growth_per_year": "platform_uplift",
+      "unit_cost": 1.1,
+      "terminal": -40000
+    },
+    "build": {
+      "live_month": "build_months + 1",
+      "ramp_months": 3,
+      "quality": "build_quality",
+      "one_time": {
+        "platform_and_data": "build_capex"
+      },
+      "one_time_months": "build_months",
+      "build_monthly": {
+        "team": "team_month"
+      },
+      "run_monthly": {
+        "ops_and_oncall": "ops_month"
+      },
+      "unit_cost": "gpu_per_k",
+      "price_change_per_year": "gpu_drift",
+      "refresh": {
+        "every_months": 24,
+        "cost": "refresh_cost"
+      },
+      "terminal": 120000,
+      "failure": {
+        "probability": 0.25,
+        "month": 6,
+        "fallback": "api"
+      }
+    }
+  },
+  "gates": {
+    "leader_must_be": "build",
+    "min_prob_leader_wins": 0.9
+  }
+}
