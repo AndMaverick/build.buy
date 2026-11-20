@@ -1,6 +1,8 @@
 # build.buy
 
-Build versus buy is usually argued on instinct. build.buy puts every option on the same footing, month by month: a one time cost, a build team, run cost that can grow, usage pricing with volume tiers and falling prices, benefits that start late and ramp, the chance a build fails and you buy anyway, and what it is worth or costs to leave. It discounts to net present value, finds the assumption that would flip the answer, and reports how likely each option is to be the right call and what being wrong would cost. Standard library only, Python 3.10 to 3.13.
+Picture a team that spends a quarter building an assistant that a vendor sells by subscription. A year on, someone asks whether that was the right call. Nobody can say, because it was argued on instinct and the assumptions behind it were never written down.
+
+build.buy puts every option on the same footing, month by month: a one time cost, a build team, run cost that can grow, usage pricing with volume tiers and falling prices, benefits that start late and ramp, the chance a build fails and you buy anyway, and what it is worth or costs to leave. It discounts to net present value, finds the assumption that would flip the answer, and reports how likely each option is to be the right call and what being wrong would cost. Standard library only, Python 3.10 to 3.13.
 
 If you are weighing this decision for real, the commercial question is rarely the arithmetic. It is which assumptions the answer depends on. [roi.lens](https://github.com/AndMaverick/roi.lens) takes the same question to a portfolio and shows how wide the answer really is.
 
